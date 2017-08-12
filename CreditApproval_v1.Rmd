@@ -5,7 +5,7 @@ library(data.table)
 
 Let's read in the credit data
 ```{r}
-crx.data <- data.table(read.table("crx.data.txt", header = FALSE, sep = ",", na.strings = "?"))
+crx.data <- data.table(read.table("data/crx.data.txt", header = FALSE, sep = ",", na.strings = "?"))
 ```
 
 Lets preview our credit data

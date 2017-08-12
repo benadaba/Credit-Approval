@@ -3,7 +3,7 @@ library(data.table)
 
 
 #let's read in the credit data
-crx.data <- data.table(read.table("crx.data.txt", header = FALSE, sep = ",", na.strings = "?"))
+crx.data <- data.table(read.table("data/crx.data.txt", header = FALSE, sep = ",", na.strings = "?"))
 head(crx.data)
 str(crx.data)
 names(crx.data)
@@ -148,6 +148,7 @@ library(caret)
 
 #split data into test and train set
 # define an 70%/30% train/test split of the dataset
+set.seed(257)
 trainIndex <- createDataPartition(crx.data$V16, p=0.70, list=FALSE)
 dataTrain <- crx.data[ trainIndex,]
 dataTest <- crx.data[-trainIndex,]
