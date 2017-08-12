@@ -1,0 +1,349 @@
+```{r}
+setwd("C:/Users/adaba/Documents/Coursera/Credit Card Approval")
+library(data.table)
+```
+
+Let's read in the credit data
+```{r}
+crx.data <- data.table(read.table("crx.data.txt", header = FALSE, sep = ",", na.strings = "?"))
+```
+
+Lets preview our credit data
+
+```{r}
+head(crx.data)
+```
+
+It is good to have an idea about the class of the variables, their levels and 
+some sample data
+```{r}
+str(crx.data)
+```
+
+Lets see the full column names in our credit data set
+```{r}
+names(crx.data)
+```
+
+
+
+Let's examine the distribution of the target variable, the one we are trying to predict
+to view , the distribution, we will convert the values to numeric values for this purpose
+We saw that the target variables values were "+" and "-", hence in our conversions, the
+"+"  = 1 and "-""  = 0
+```{r}
+hist(as.numeric(crx.data$V16)-1)
+```
+
+Lets see how are target variable now looks
+```{r}
+as.numeric(crx.data$V16)-1
+```
+
+
+
+Lets now actually change the target variable to 0s and 1s in our dataset for the rest of the analysis
+```{r}
+crx.data$V16 <- as.numeric(crx.data$V16)-1
+```
+
+
+
+Lets create check the distribution of each of the attributes of the credit data using
+histograms
+
+```{r}
+numeric_data <- as.data.frame(crx.data[,c(2,3,8,11,14,15)])
+summary(numeric_data)
+par(mfrow=c(2,3))
+for(i in 1:6) {
+    hist(numeric_data[,i], main=names(numeric_data)[i])
+}
+```
+
+The variable V2 seems to have bell curve shape but most of the numeric variables of our dataset are skewed to the right ( their tails point to the right). This suggests we can preprocess or transform the data using techniques like Box-Cox to see if it enhances the model performance after our first model built. (However, we will  not be covering that technique in this article)
+
+
+A closer look at variable V14 particularly V15 (and also deducing from the summary statistics indicate there might be some outliers . For instance, the average of the V15 variable is  1017.4 whereas the maximum is 100000.0 which is way from the normal. There advanced techniques to statistically detect outliers (That is not covered here) and we will not be removing these data points in this analysis
+
+
+Lets take a closer look at V15 again
+```{r}
+par(mfrow=c(1,1))
+hist((numeric_data[,"V15"]))
+#hist(log10(numeric_data[,"V15"]))
+summary(numeric_data$V15)
+```
+
+
+lets look at the non numerical values to have a sense of how they are distributed
+
+```{r}
+non_numeric <- numeric_data <- as.data.frame(crx.data[,-c(2,3,8,11,14,15)])
+```
+How many are there?
+```{r}
+dim(non_numeric)
+```
+What are they ?
+```{r}
+names(non_numeric)
+```
+
+Lets see their distribution. V16 was a factor variable but that was later converted
+to numeric. but we will view it as part of this distribution
+```{r}
+par(mfrow=c(2,5))
+for(i in 1:10) {
+    plot(non_numeric[,i], main=names(non_numeric)[i])
+}
+```
+
+
+Lets examine the relationship between the numerical features of the application
+```{r}
+plot(crx.data[,c(2,3,8,11,14,15)], col=crx.data$V16)
+```
+
+Lets check the correlations between the numerical features
+```{r}
+correlations <- cor(crx.data[,c(2,3,8,11,14,15)])
+print(correlations)
+```
+
+lets get a pairwise visualization of all the dataset
+
+```{r}
+pairs(V16~., data=non_numeric, col=non_numeric$V16)
+```
+
+
+summary
+```{r}
+summary(crx.data)
+```
+
+
+What percentage of the dataset is missing some VALUES. if more than 10% we should go and find more and  appropriate data
+Will this percentage of missen data have an impact on our ?
+How do we handle missen data ?
+```{r}
+missen <- sum(!complete.cases(crx.data))/dim(crx.data)[1] *100
+missen   
+```
+This shows about 5.36% missen data   
+
+
+**HANDLING MISSEN VALUES**
+
+Input the missen values in the variable 1 (V1) with the most occuring value - MODE
+The list of variables are few hence we will be inputing the missen values one after 
+the other. Ideally, you would a create function that will shorten the entire process.
+
+Create function to get the mode
+
+```{r}
+getmode <- function(v) {
+    uniqv <- unique(v)
+    uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+
+```{r}
+v1.mode <- getmode(crx.data$V1)
+```
+
+Input the missen values with the mode
+
+```{r}
+crx.data[is.na(crx.data$V1), 1]  <- v1.mode
+```
+
+Preview the inputation
+```{r}
+table(crx.data$V1)
+```
+
+
+Input the missen values in the variable V2 with the average
+```{r}
+crx.data[is.na(crx.data$V2),  2]  <- mean(crx.data$V2, na.rm = TRUE)
+```
+
+Preview the inputation
+```{r}
+summary(crx.data$V2)
+```
+
+
+Input the missen values in the V4 with the mode
+```{r}
+crx.data[is.na(crx.data$V4), 4]  <- getmode(crx.data$V4)
+#preview the inputation
+table(crx.data$V4)
+```
+
+
+Input the missen values in the V5 with the mode
+```{r}
+crx.data[is.na(crx.data$V5), 5]  <- getmode(crx.data$V5)
+#preview the inputation
+table(crx.data$V5)
+```
+
+
+V6: input the missen values  with the mode
+```{r}
+crx.data[is.na(crx.data$V6), 6]  <- getmode(crx.data$V6)
+#preview the inputation
+table(crx.data$V6)
+```
+
+Any missen values
+```{r}
+table(is.na(crx.data$V6))
+```
+
+V7: input the missen values  with the mode
+```{r}
+crx.data[is.na(crx.data$V7), 7]  <- getmode(crx.data$V7)
+#preview the inputation
+table(crx.data$V7)
+```
+
+
+
+V14: input the missen values  with the mode
+```{r}
+crx.data[is.na(crx.data$V14), 14]  <- as.integer(mean(crx.data$V14, na.rm = TRUE))
+#preview the inputation
+summary(crx.data$v14)
+```
+
+
+Lets call the mlbench and caret libraries. 
+You can install them if they are not already installed.
+```{r}
+#install.packages("mlbench")
+#install.packages("caret")
+library(mlbench)
+library(caret)
+
+```
+
+Split data into test and train set
+Define an 70%/30% train/test split of the dataset
+
+```{r}
+set.seed(257)
+trainIndex <- createDataPartition(crx.data$V16, p=0.70, list=FALSE)
+dataTrain <- crx.data[ trainIndex,]
+dataTest <- crx.data[-trainIndex,]
+```
+
+
+Run logistic regression on the training dataset
+```{r}
+model <- glm(V16 ~.,family=binomial(link='logit'),data=dataTrain)
+
+```
+
+Lets see the summary of our model results
+```{r}
+summary(model)
+```
+
+
+From the result, we can see that variables *V6x, V9t , V13p*, and *V15* are statistically 
+significant as they have p-values less than 0.05.
+
+For instance from the result we can see that a unit change in variable V9t will increase
+the person's chance of being approved for credit by 3.901e+00 whilst holding the other variables constant (because the coefficient of V9t is positive)
+
+
+Now lets check our deviances. The smaller the deviance value, the better.  
+
+Our Null deviance = 664.19. OUr Null deviance is how welll our model is perforning if we do not have any predictor variables considered but only accounting for the intercept.
+And our Residual Deviance =  210.11 and this indicates how well our model is performaning when we add in predictor variables to our model. 
+
+We can see that deviance reduces (which means our model performs better when we add in our predictor variables).   Which indicates, we can make better decisions on either approving a person for a credit or not if we consider other variables than just making a guess without taking some significant variables into consideration.     
+
+
+Let's see a table of deviances by running anova on our model
+```{r}
+anova(model, test="Chisq")
+```
+
+Taking note of the Null deviance, it can be observed that as we add our predictor variables sequentially to the model (first to last as they appear in the result), the deviance reduces (model performs better). The deviance drops most where the model indicates 
+
+
+Let's make predictions using the data we kept aside, which is the Test Data
+```{r}
+probabilities <- predict(model, newdata = dataTest[,-16], type='response')
+predictions <- ifelse(probabilities > 0.5,'1','0')
+```
+
+Let's summarize the accuracy of the predictions
+```{r}
+table(predictions, dataTest$V16)
+```
+It can be seen that the correct predictions are on the diagonal and the wrong ones are on the "off-diagonal"
+
+It can be seen that we predicted ***70** to be **"1" (TRUE or they should be approved)** and they were indeed **"1"(TRUE, correct that we should approve them)**. That is our **TRUE-POSITIVE (TP).**  
+
+
+We also predicted **112** to be **"0" (FALSE, that they should be rejected)** and they were indeed **"0" (FALSE, in the test dataset, they were actually rejected)** which indicate our **TRUE-NEGATIVE (TN)**
+
+and we predicted **10** to be **"1"(TRUE, that they should be accepted)** but that prediction was **FALSE (WRONG, in the Test Dataset, they were not accepted)** . That is our **FALSE-POSITIVE (FP)**
+
+and we predicted **15** to be **"0" (FALSE, they should be rejected)** but that was WRONG as they were  **"1" (TRUE, they were accepted in the Test Dataset)**. That is the **FALSE-NEGATIVE (FN) ** 
+
+
+Lets check the overall Accuracy of our model
+```{r}
+misClasificError <- mean(predictions != dataTest$V16)
+print(paste('Accuracy',1-misClasificError))
+```
+The overall Accuracy of our model is 87.9% . 
+This can be improved further with other advanced techniques and Parameter tuning (but that will not be covered here)
+
+Though we get 85.5% overall Accuracy, it is always better to check our **recall**  **(TRUE-POSITIVE rate or sensitivity). Recall = TP / (TP + FN)**
+
+and also your precision which is **Precision = TP/ (TP + FP)**
+
+And it is also good to have a peep at your **TRUE NEGATIVE RATE** (which is **Specificity**) and that is **TRUE NEGATIVE RATE = TN / (TN + FP)**
+
+
+
+**Let's match predictions to original dataset**
+```{r}
+copy_dataTest <- data.frame(dataTest)
+dim(copy_dataTest)
+copy_dataTest_pred <- cbind(copy_dataTest, predictions)
+copy_dataTest_pred
+write.csv(copy_dataTest_pred, file = "match_predictions.csv")
+```
+
+
+Lets check the Area Under the Curve (AUC) and ROC plot
+```{r}
+#install.packages("ROCR")
+library(ROCR)
+predicted <- predict(model, newdata=dataTest[,-16], type="response")
+pr <- prediction(predicted, dataTest$V16)
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+```
+
+
+The ROC Curve shows the plot high above and also closer to "1" which is good
+
+
+Lets check the area under the curve accuracy
+```{r}
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
+```
+
+Hope this gives you a basis for predicting whether or not someone will be approved for a Credit based on some characters (variables) we know about them!
